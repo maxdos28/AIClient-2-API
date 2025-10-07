@@ -93,7 +93,7 @@ func (s *Server) setupRouter() {
 	gin.SetMode(gin.ReleaseMode)
 
 	s.router = gin.New()
-	
+
 	// Add middleware
 	s.router.Use(gin.Recovery())
 	s.router.Use(middleware.Logger())
@@ -197,7 +197,7 @@ func (s *Server) handleChatCompletions(c *gin.Context) {
 // handleStreamingResponse handles streaming responses
 func (s *Server) handleStreamingResponse(c *gin.Context, provider providers.Provider, model string, request interface{}, fromProtocol, toProtocol models.ProtocolPrefix) {
 	ctx := c.Request.Context()
-	
+
 	// Get stream from provider
 	stream, err := provider.GenerateContentStream(ctx, model, request)
 	if err != nil {
@@ -233,7 +233,7 @@ func (s *Server) handleStreamingResponse(c *gin.Context, provider providers.Prov
 
 			if n > 0 {
 				chunk := string(buffer[:n])
-				
+
 				// Convert chunk if needed
 				if fromProtocol != toProtocol {
 					convertedChunk, err := s.converter.ConvertStreamChunk(chunk, toProtocol, fromProtocol, model)
@@ -250,7 +250,7 @@ func (s *Server) handleStreamingResponse(c *gin.Context, provider providers.Prov
 				}
 			}
 		}
-		
+
 		// Send done signal
 		dataChan <- "data: [DONE]\n\n"
 	}()
@@ -307,7 +307,7 @@ func (s *Server) handleListModels(c *gin.Context) {
 // handleGeminiGenerate handles Gemini-style generation requests
 func (s *Server) handleGeminiGenerate(c *gin.Context) {
 	modelName := c.Param("model")
-	
+
 	// Parse request
 	var req models.GeminiRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -343,7 +343,7 @@ func (s *Server) handleGeminiGenerate(c *gin.Context) {
 // handleGeminiStream handles Gemini-style streaming requests
 func (s *Server) handleGeminiStream(c *gin.Context) {
 	modelName := c.Param("model")
-	
+
 	// Parse request
 	var req models.GeminiRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

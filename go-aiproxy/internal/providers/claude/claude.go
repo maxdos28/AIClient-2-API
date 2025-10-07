@@ -96,9 +96,9 @@ func (c *Client) GenerateContentStream(ctx context.Context, model string, reques
 
 	// Return a custom reader that handles SSE parsing
 	return &claudeStreamReader{
-		reader:  bufio.NewReader(resp.Body),
-		closer:  resp.Body,
-		model:   model,
+		reader: bufio.NewReader(resp.Body),
+		closer: resp.Body,
+		model:  model,
 	}, nil
 }
 
@@ -177,10 +177,10 @@ func (c *Client) makeRequest(ctx context.Context, method, url string, body inter
 
 // claudeStreamReader handles SSE stream parsing for Claude
 type claudeStreamReader struct {
-	reader  *bufio.Reader
-	closer  io.Closer
-	model   string
-	buffer  []byte
+	reader *bufio.Reader
+	closer io.Closer
+	model  string
+	buffer []byte
 }
 
 func (r *claudeStreamReader) Read(p []byte) (n int, err error) {
@@ -208,7 +208,7 @@ func (r *claudeStreamReader) Read(p []byte) (n int, err error) {
 
 		if strings.HasPrefix(line, "data: ") {
 			data := strings.TrimPrefix(line, "data: ")
-			
+
 			// Parse the event
 			var event map[string]interface{}
 			if err := json.Unmarshal([]byte(data), &event); err != nil {

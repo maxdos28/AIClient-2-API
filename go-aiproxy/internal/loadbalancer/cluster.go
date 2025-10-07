@@ -22,26 +22,26 @@ type ClusterNode struct {
 
 // Cluster manages multiple AI proxy nodes
 type Cluster struct {
-	mu          sync.RWMutex
-	nodeID      string
-	nodes       map[string]*ClusterNode
-	isLeader    bool
-	leaderID    string
-	httpClient  *http.Client
+	mu                sync.RWMutex
+	nodeID            string
+	nodes             map[string]*ClusterNode
+	isLeader          bool
+	leaderID          string
+	httpClient        *http.Client
 	heartbeatInterval time.Duration
-	stopChan    chan struct{}
+	stopChan          chan struct{}
 }
 
 // NewCluster creates a new cluster manager
 func NewCluster(nodeID, address string) *Cluster {
 	return &Cluster{
-		nodeID:   nodeID,
-		nodes:    make(map[string]*ClusterNode),
+		nodeID: nodeID,
+		nodes:  make(map[string]*ClusterNode),
 		httpClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
 		heartbeatInterval: 10 * time.Second,
-		stopChan:         make(chan struct{}),
+		stopChan:          make(chan struct{}),
 	}
 }
 
@@ -66,7 +66,7 @@ func (c *Cluster) Join(seedNodes []string) error {
 // Leave leaves the cluster
 func (c *Cluster) Leave() {
 	close(c.stopChan)
-	
+
 	// Notify other nodes
 	c.mu.RLock()
 	nodes := make([]*ClusterNode, 0, len(c.nodes))
@@ -83,12 +83,12 @@ func (c *Cluster) Leave() {
 // connectToNode connects to a cluster node
 func (c *Cluster) connectToNode(address string) error {
 	url := fmt.Sprintf("http://%s/cluster/join", address)
-	
+
 	nodeInfo := map[string]interface{}{
 		"id":      c.nodeID,
 		"address": address,
 	}
-	
+
 	data, _ := json.Marshal(nodeInfo)
 	resp, err := c.httpClient.Post(url, "application/json", bytes.NewReader(data))
 	if err != nil {
@@ -105,7 +105,7 @@ func (c *Cluster) connectToNode(address string) error {
 		Nodes    []ClusterNode `json:"nodes"`
 		LeaderID string        `json:"leader_id"`
 	}
-	
+
 	if err := json.NewDecoder(resp.Body).Decode(&clusterInfo); err != nil {
 		return err
 	}
@@ -155,12 +155,12 @@ func (c *Cluster) sendHeartbeats() {
 // sendHeartbeat sends a heartbeat to a specific node
 func (c *Cluster) sendHeartbeat(node *ClusterNode) {
 	url := fmt.Sprintf("http://%s/cluster/heartbeat", node.Address)
-	
+
 	heartbeat := map[string]interface{}{
 		"id":        c.nodeID,
 		"timestamp": time.Now().Unix(),
 	}
-	
+
 	data, _ := json.Marshal(heartbeat)
 	resp, err := c.httpClient.Post(url, "application/json", bytes.NewReader(data))
 	if err != nil {
@@ -236,7 +236,7 @@ func (c *Cluster) markNodeFailed(nodeID string) {
 
 	if _, ok := c.nodes[nodeID]; ok {
 		delete(c.nodes, nodeID)
-		
+
 		// If failed node was leader, trigger new election
 		if nodeID == c.leaderID {
 			c.leaderID = ""
@@ -248,11 +248,11 @@ func (c *Cluster) markNodeFailed(nodeID string) {
 // notifyNodeLeave notifies a node about leaving
 func (c *Cluster) notifyNodeLeave(address string) {
 	url := fmt.Sprintf("http://%s/cluster/leave", address)
-	
+
 	data, _ := json.Marshal(map[string]string{
 		"id": c.nodeID,
 	})
-	
+
 	c.httpClient.Post(url, "application/json", bytes.NewReader(data))
 }
 
@@ -298,7 +298,7 @@ func (c *Cluster) handleHeartbeat(ctx *gin.Context) {
 		ID        string `json:"id"`
 		Timestamp int64  `json:"timestamp"`
 	}
-	
+
 	if err := ctx.ShouldBindJSON(&heartbeat); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -318,7 +318,7 @@ func (c *Cluster) handleLeave(ctx *gin.Context) {
 	var req struct {
 		ID string `json:"id"`
 	}
-	
+
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

@@ -107,7 +107,7 @@ func TestStreamChunkConversion(t *testing.T) {
 
 	// Test stream chunk
 	chunk := "Hello, world!"
-	
+
 	result, err := converter.ConvertStreamChunk(chunk, models.ProtocolGemini, models.ProtocolOpenAI, "test-model")
 	if err != nil {
 		t.Fatalf("Stream chunk conversion failed: %v", err)
@@ -135,7 +135,7 @@ func TestStreamChunkConversion(t *testing.T) {
 
 func BenchmarkOpenAIToClaudeConversion(b *testing.B) {
 	converter := convert.NewConverter()
-	
+
 	openaiReq := &models.OpenAIRequest{
 		Model: "gpt-3.5-turbo",
 		Messages: []models.OpenAIMessage{

@@ -139,7 +139,7 @@ func (c *Client) GenerateContentStream(ctx context.Context, model string, reques
 // ListModels implements the Provider interface
 func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 	url := fmt.Sprintf("%s/v1beta/models", c.baseURL)
-	
+
 	resp, err := c.makeRequest(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err

@@ -37,17 +37,17 @@ const (
 
 // OpenAI Models
 type OpenAIRequest struct {
-	Model            string         `json:"model"`
-	Messages         []OpenAIMessage `json:"messages"`
-	MaxTokens        int            `json:"max_tokens,omitempty"`
-	Temperature      float64        `json:"temperature,omitempty"`
-	TopP             float64        `json:"top_p,omitempty"`
-	Stream           bool           `json:"stream,omitempty"`
-	Tools            []Tool         `json:"tools,omitempty"`
-	ToolChoice       interface{}    `json:"tool_choice,omitempty"`
-	ResponseFormat   interface{}    `json:"response_format,omitempty"`
-	ReasoningEffort  string         `json:"reasoning_effort,omitempty"`
-	MaxCompletionTokens int         `json:"max_completion_tokens,omitempty"`
+	Model               string          `json:"model"`
+	Messages            []OpenAIMessage `json:"messages"`
+	MaxTokens           int             `json:"max_tokens,omitempty"`
+	Temperature         float64         `json:"temperature,omitempty"`
+	TopP                float64         `json:"top_p,omitempty"`
+	Stream              bool            `json:"stream,omitempty"`
+	Tools               []Tool          `json:"tools,omitempty"`
+	ToolChoice          interface{}     `json:"tool_choice,omitempty"`
+	ResponseFormat      interface{}     `json:"response_format,omitempty"`
+	ReasoningEffort     string          `json:"reasoning_effort,omitempty"`
+	MaxCompletionTokens int             `json:"max_completion_tokens,omitempty"`
 }
 
 type OpenAIMessage struct {
@@ -107,10 +107,10 @@ type OpenAIResponse struct {
 }
 
 type OpenAIChoice struct {
-	Index        int              `json:"index"`
-	Message      *OpenAIMessage   `json:"message,omitempty"`
-	Delta        *OpenAIMessage   `json:"delta,omitempty"`
-	FinishReason string           `json:"finish_reason,omitempty"`
+	Index        int            `json:"index"`
+	Message      *OpenAIMessage `json:"message,omitempty"`
+	Delta        *OpenAIMessage `json:"delta,omitempty"`
+	FinishReason string         `json:"finish_reason,omitempty"`
 }
 
 type Usage struct {
@@ -121,33 +121,33 @@ type Usage struct {
 
 // Claude Models
 type ClaudeRequest struct {
-	Model       string           `json:"model"`
-	Messages    []ClaudeMessage  `json:"messages"`
-	System      string           `json:"system,omitempty"`
-	MaxTokens   int              `json:"max_tokens"`
-	Temperature float64          `json:"temperature,omitempty"`
-	TopP        float64          `json:"top_p,omitempty"`
-	Stream      bool             `json:"stream,omitempty"`
-	Tools       []ClaudeTool     `json:"tools,omitempty"`
+	Model       string            `json:"model"`
+	Messages    []ClaudeMessage   `json:"messages"`
+	System      string            `json:"system,omitempty"`
+	MaxTokens   int               `json:"max_tokens"`
+	Temperature float64           `json:"temperature,omitempty"`
+	TopP        float64           `json:"top_p,omitempty"`
+	Stream      bool              `json:"stream,omitempty"`
+	Tools       []ClaudeTool      `json:"tools,omitempty"`
 	ToolChoice  *ClaudeToolChoice `json:"tool_choice,omitempty"`
-	Thinking    *ClaudeThinking  `json:"thinking,omitempty"`
+	Thinking    *ClaudeThinking   `json:"thinking,omitempty"`
 }
 
 type ClaudeMessage struct {
-	Role    string         `json:"role"`
+	Role    string          `json:"role"`
 	Content []ClaudeContent `json:"content"`
 }
 
 type ClaudeContent struct {
-	Type       string                 `json:"type"`
-	Text       string                 `json:"text,omitempty"`
-	Source     *ClaudeImageSource     `json:"source,omitempty"`
-	ID         string                 `json:"id,omitempty"`
-	Name       string                 `json:"name,omitempty"`
-	Input      map[string]interface{} `json:"input,omitempty"`
-	ToolUseID  string                 `json:"tool_use_id,omitempty"`
-	Content    interface{}            `json:"content,omitempty"`
-	Thinking   string                 `json:"thinking,omitempty"`
+	Type      string                 `json:"type"`
+	Text      string                 `json:"text,omitempty"`
+	Source    *ClaudeImageSource     `json:"source,omitempty"`
+	ID        string                 `json:"id,omitempty"`
+	Name      string                 `json:"name,omitempty"`
+	Input     map[string]interface{} `json:"input,omitempty"`
+	ToolUseID string                 `json:"tool_use_id,omitempty"`
+	Content   interface{}            `json:"content,omitempty"`
+	Thinking  string                 `json:"thinking,omitempty"`
 }
 
 type ClaudeImageSource struct {
@@ -157,9 +157,9 @@ type ClaudeImageSource struct {
 }
 
 type ClaudeTool struct {
-	Name         string                 `json:"name"`
-	Description  string                 `json:"description"`
-	InputSchema  map[string]interface{} `json:"input_schema"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	InputSchema map[string]interface{} `json:"input_schema"`
 }
 
 type ClaudeToolChoice struct {
@@ -173,14 +173,14 @@ type ClaudeThinking struct {
 }
 
 type ClaudeResponse struct {
-	ID           string         `json:"id"`
-	Type         string         `json:"type"`
-	Role         string         `json:"role"`
+	ID           string          `json:"id"`
+	Type         string          `json:"type"`
+	Role         string          `json:"role"`
 	Content      []ClaudeContent `json:"content"`
-	Model        string         `json:"model"`
-	StopReason   string         `json:"stop_reason"`
-	StopSequence *string        `json:"stop_sequence"`
-	Usage        *ClaudeUsage   `json:"usage"`
+	Model        string          `json:"model"`
+	StopReason   string          `json:"stop_reason"`
+	StopSequence *string         `json:"stop_sequence"`
+	Usage        *ClaudeUsage    `json:"usage"`
 }
 
 type ClaudeUsage struct {
@@ -256,13 +256,13 @@ type GeminiToolConfig struct {
 }
 
 type GeminiFunctionCallingConfig struct {
-	Mode                  string   `json:"mode"`
-	AllowedFunctionNames  []string `json:"allowedFunctionNames,omitempty"`
+	Mode                 string   `json:"mode"`
+	AllowedFunctionNames []string `json:"allowedFunctionNames,omitempty"`
 }
 
 type GeminiResponse struct {
-	Candidates     []GeminiCandidate `json:"candidates"`
-	UsageMetadata  *GeminiUsage      `json:"usageMetadata,omitempty"`
+	Candidates    []GeminiCandidate `json:"candidates"`
+	UsageMetadata *GeminiUsage      `json:"usageMetadata,omitempty"`
 }
 
 type GeminiCandidate struct {
@@ -279,12 +279,12 @@ type GeminiUsage struct {
 
 // Stream chunk types
 type StreamChunk struct {
-	ID      string          `json:"id,omitempty"`
-	Object  string          `json:"object,omitempty"`
-	Created int64           `json:"created,omitempty"`
-	Model   string          `json:"model,omitempty"`
-	Choices []StreamChoice  `json:"choices,omitempty"`
-	Usage   *Usage          `json:"usage,omitempty"`
+	ID      string         `json:"id,omitempty"`
+	Object  string         `json:"object,omitempty"`
+	Created int64          `json:"created,omitempty"`
+	Model   string         `json:"model,omitempty"`
+	Choices []StreamChoice `json:"choices,omitempty"`
+	Usage   *Usage         `json:"usage,omitempty"`
 }
 
 type StreamChoice struct {
@@ -295,8 +295,8 @@ type StreamChoice struct {
 
 // Model list types
 type ModelList struct {
-	Object string       `json:"object"`
-	Data   []ModelInfo  `json:"data"`
+	Object string      `json:"object"`
+	Data   []ModelInfo `json:"data"`
 }
 
 type ModelInfo struct {
@@ -308,19 +308,19 @@ type ModelInfo struct {
 
 // Provider configuration
 type ProviderConfig struct {
-	Provider            Provider
-	APIKey              string
-	BaseURL             string
-	ProjectID           string
-	OAuthCredsBase64    string
-	OAuthCredsFile      string
-	CheckModelName      string
-	UUID                string
-	IsHealthy           bool
-	LastUsed            *time.Time
-	UsageCount          int
-	ErrorCount          int
-	LastErrorTime       *time.Time
+	Provider         Provider
+	APIKey           string
+	BaseURL          string
+	ProjectID        string
+	OAuthCredsBase64 string
+	OAuthCredsFile   string
+	CheckModelName   string
+	UUID             string
+	IsHealthy        bool
+	LastUsed         *time.Time
+	UsageCount       int
+	ErrorCount       int
+	LastErrorTime    *time.Time
 }
 
 // Helper functions for content conversion

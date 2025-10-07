@@ -78,14 +78,14 @@ func (cm *CacheManager) Get(key string) (interface{}, bool) {
 
 	if item, found := cm.cache.Get(key); found {
 		cm.stats.Hits++
-		
+
 		// Update access time if it's a CacheEntry
 		if entry, ok := item.(*CacheEntry); ok {
 			entry.AccessedAt = time.Now()
 			entry.HitCount++
 			return entry.Value, true
 		}
-		
+
 		return item, true
 	}
 
@@ -187,20 +187,20 @@ func (cm *CacheManager) estimateSize(value interface{}) int64 {
 // evictLRU evicts least recently used items to make space
 func (cm *CacheManager) evictLRU(neededSize int64) {
 	items := cm.cache.Items()
-	
+
 	// Convert to slice for sorting
 	type cacheItem struct {
 		key   string
 		entry *CacheEntry
 	}
-	
+
 	var sortedItems []cacheItem
 	for k, v := range items {
 		if entry, ok := v.Object.(*CacheEntry); ok {
 			sortedItems = append(sortedItems, cacheItem{key: k, entry: entry})
 		}
 	}
-	
+
 	// Sort by access time (oldest first)
 	for i := 0; i < len(sortedItems)-1; i++ {
 		for j := i + 1; j < len(sortedItems); j++ {
@@ -209,14 +209,14 @@ func (cm *CacheManager) evictLRU(neededSize int64) {
 			}
 		}
 	}
-	
+
 	// Evict items until we have enough space
 	freedSpace := int64(0)
 	for _, item := range sortedItems {
 		if freedSpace >= neededSize {
 			break
 		}
-		
+
 		cm.cache.Delete(item.key)
 		cm.currentSize -= item.entry.Size
 		freedSpace += item.entry.Size
@@ -242,13 +242,13 @@ func (m *CacheMiddleware) ShouldCache(method, path string, isStream bool) bool {
 	if method == "GET" {
 		return true
 	}
-	
+
 	if method == "POST" && !isStream {
 		// Cache completion requests but not streaming ones
-		return strings.Contains(path, "/completions") || 
-		       strings.Contains(path, "/generateContent")
+		return strings.Contains(path, "/completions") ||
+			strings.Contains(path, "/generateContent")
 	}
-	
+
 	return false
 }
 
@@ -258,7 +258,7 @@ func (m *CacheMiddleware) CacheDuration(path string) time.Duration {
 	if strings.Contains(path, "/models") {
 		return 1 * time.Hour
 	}
-	
+
 	// Completion requests cached for shorter duration
 	return 5 * time.Minute
 }

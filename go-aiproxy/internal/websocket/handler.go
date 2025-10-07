@@ -19,11 +19,11 @@ import (
 
 // WebSocketHandler handles WebSocket connections
 type WebSocketHandler struct {
-	hub        *Hub
-	upgrader   websocket.Upgrader
-	providers  map[string]providers.Provider
-	converter  convert.Converter
-	authKey    string
+	hub       *Hub
+	upgrader  websocket.Upgrader
+	providers map[string]providers.Provider
+	converter convert.Converter
+	authKey   string
 }
 
 // NewWebSocketHandler creates a new WebSocket handler
@@ -52,7 +52,7 @@ func (h *WebSocketHandler) HandleWebSocket(c *gin.Context) {
 	if token == "" {
 		token = c.GetHeader("Sec-WebSocket-Protocol")
 	}
-	
+
 	if token != h.authKey {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authentication token"})
 		return
@@ -242,7 +242,7 @@ func (h *WebSocketHandler) handleRequest(client *Client, msg *Message) {
 // handleNonStreamingRequest processes non-streaming requests
 func (h *WebSocketHandler) handleNonStreamingRequest(client *Client, msg *Message, provider providers.Provider, request interface{}, fromProtocol, toProtocol models.ProtocolPrefix) {
 	ctx := context.Background()
-	
+
 	// Make request
 	response, err := provider.GenerateContent(ctx, client.model, request)
 	if err != nil {
@@ -276,7 +276,7 @@ func (h *WebSocketHandler) handleNonStreamingRequest(client *Client, msg *Messag
 // handleStreamingRequest processes streaming requests
 func (h *WebSocketHandler) handleStreamingRequest(client *Client, msg *Message, provider providers.Provider, request interface{}, fromProtocol, toProtocol models.ProtocolPrefix) {
 	ctx := context.Background()
-	
+
 	// Get stream
 	stream, err := provider.GenerateContentStream(ctx, client.model, request)
 	if err != nil {
@@ -309,7 +309,7 @@ func (h *WebSocketHandler) handleStreamingRequest(client *Client, msg *Message, 
 
 			if n > 0 {
 				chunk := string(buffer[:n])
-				
+
 				// Convert chunk if needed
 				if fromProtocol != toProtocol {
 					convertedChunk, err := h.converter.ConvertStreamChunk(chunk, toProtocol, fromProtocol, client.model)

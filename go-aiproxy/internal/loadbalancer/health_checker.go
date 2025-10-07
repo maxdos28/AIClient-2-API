@@ -99,7 +99,7 @@ func (hc *HealthChecker) checkInstance(instance *Instance) {
 
 	// Perform health check
 	healthy := instance.Provider.IsHealthy()
-	
+
 	// Additional check: try to list models as a health check
 	if healthy {
 		_, err := instance.Provider.ListModels(ctx)
@@ -109,7 +109,7 @@ func (hc *HealthChecker) checkInstance(instance *Instance) {
 	// Update health status if changed
 	if instance.IsHealthy != healthy {
 		instance.IsHealthy = healthy
-		
+
 		// Notify callbacks
 		hc.mu.RLock()
 		callbacks := make([]func(string, bool), len(hc.updateCallbacks))

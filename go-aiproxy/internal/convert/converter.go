@@ -273,7 +273,7 @@ func (c *DefaultConverter) toOpenAIChatCompletionFromGemini(data interface{}, mo
 	}
 
 	content := c.processGeminiResponseContent(geminiResp)
-	
+
 	response := &models.OpenAIResponse{
 		ID:      fmt.Sprintf("chatcmpl-%s", uuid.New().String()),
 		Object:  "chat.completion",
@@ -647,7 +647,7 @@ func (c *DefaultConverter) toClaudeRequestFromOpenAI(data interface{}) (*models.
 						header := parts[0]
 						data := parts[1]
 						mediaType := strings.TrimPrefix(strings.Split(header, ";")[0], "data:")
-						
+
 						claudeMsg.Content = append(claudeMsg.Content, models.ClaudeContent{
 							Type: "image",
 							Source: &models.ClaudeImageSource{
@@ -679,7 +679,7 @@ func (c *DefaultConverter) toClaudeRequestFromOpenAI(data interface{}) (*models.
 			for _, tc := range msg.ToolCalls {
 				var input map[string]interface{}
 				json.Unmarshal([]byte(tc.Function.Arguments), &input)
-				
+
 				claudeMsg.Content = append(claudeMsg.Content, models.ClaudeContent{
 					Type:  "tool_use",
 					ID:    tc.ID,
@@ -773,7 +773,7 @@ func (c *DefaultConverter) toGeminiRequestFromOpenAI(data interface{}) (*models.
 							header := parts[0]
 							data := parts[1]
 							mimeType := strings.TrimPrefix(strings.Split(header, ";")[0], "data:")
-							
+
 							geminiContent.Parts = append(geminiContent.Parts, models.GeminiPart{
 								InlineData: &models.GeminiInlineData{
 									MimeType: mimeType,
@@ -840,8 +840,101 @@ func (c *DefaultConverter) toClaudeRequestFromGemini(data interface{}) (*models.
 }
 
 func (c *DefaultConverter) toGeminiRequestFromClaude(data interface{}) (*models.GeminiRequest, error) {
-	// Implementation would follow similar pattern
-	return &models.GeminiRequest{}, nil
+	claudeReq, ok := data.(*models.ClaudeRequest)
+	if !ok {
+		return nil, fmt.Errorf("invalid Claude request type")
+	}
+
+	geminiReq := &models.GeminiRequest{
+		Contents: []models.GeminiContent{},
+	}
+
+	// Convert system instruction
+	if claudeReq.System != "" {
+		geminiReq.SystemInstruction = &models.GeminiSystemInstruction{
+			Parts: []models.GeminiPart{
+				{Text: claudeReq.System},
+			},
+		}
+	}
+
+	// Convert messages
+	for _, msg := range claudeReq.Messages {
+		role := msg.Role
+		if role == "assistant" {
+			role = "model"
+		}
+
+		parts := []models.GeminiPart{}
+		for _, content := range msg.Content {
+			switch content.Type {
+			case "text":
+				parts = append(parts, models.GeminiPart{
+					Text: content.Text,
+				})
+			case "image":
+				if content.Source != nil {
+					parts = append(parts, models.GeminiPart{
+						InlineData: &models.GeminiInlineData{
+							MimeType: content.Source.MediaType,
+							Data:     content.Source.Data,
+						},
+					})
+				}
+			case "tool_use":
+				parts = append(parts, models.GeminiPart{
+					FunctionCall: &models.GeminiFunctionCall{
+						Name: content.Name,
+						Args: content.Input,
+					},
+				})
+			case "tool_result":
+				responseMap := make(map[string]interface{})
+				if content.Content != nil {
+					if str, ok := content.Content.(string); ok {
+						responseMap["result"] = str
+					} else {
+						responseMap = content.Content.(map[string]interface{})
+					}
+				}
+				parts = append(parts, models.GeminiPart{
+					FunctionResponse: &models.GeminiFunctionResponse{
+						Name:     content.Name,
+						Response: responseMap,
+					},
+				})
+			}
+		}
+
+		geminiReq.Contents = append(geminiReq.Contents, models.GeminiContent{
+			Role:  role,
+			Parts: parts,
+		})
+	}
+
+	// Convert generation config
+	geminiReq.GenerationConfig = &models.GeminiGenerationConfig{
+		Temperature:     claudeReq.Temperature,
+		TopP:            claudeReq.TopP,
+		MaxOutputTokens: claudeReq.MaxTokens,
+	}
+
+	// Convert tools
+	if len(claudeReq.Tools) > 0 {
+		geminiTools := models.GeminiTool{
+			FunctionDeclarations: []models.GeminiFunctionDeclaration{},
+		}
+		for _, tool := range claudeReq.Tools {
+			geminiTools.FunctionDeclarations = append(geminiTools.FunctionDeclarations, models.GeminiFunctionDeclaration{
+				Name:        tool.Name,
+				Description: tool.Description,
+				Parameters:  tool.InputSchema,
+			})
+		}
+		geminiReq.Tools = []models.GeminiTool{geminiTools}
+	}
+
+	return geminiReq, nil
 }
 
 func (c *DefaultConverter) toClaudeChatCompletionFromOpenAI(data interface{}, model string) (*models.ClaudeResponse, error) {

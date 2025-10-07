@@ -94,7 +94,7 @@ func (h *Hub) Run(ctx context.Context) {
 			h.mu.Lock()
 			h.clients[client.ID] = client
 			h.mu.Unlock()
-			
+
 			// Send welcome message
 			welcome := &Message{
 				Type:      MessageTypeAuthenticated,
@@ -102,12 +102,12 @@ func (h *Hub) Run(ctx context.Context) {
 				ClientID:  client.ID,
 				Timestamp: time.Now().Unix(),
 				Metadata: map[string]interface{}{
-					"version": "1.0",
+					"version":      "1.0",
 					"capabilities": []string{"streaming", "multimodal", "tools"},
 				},
 			}
 			client.SendMessage(welcome)
-			
+
 			// Update metrics
 			if h.onMetricsUpdate != nil {
 				h.onMetricsUpdate(len(h.clients))
@@ -119,7 +119,7 @@ func (h *Hub) Run(ctx context.Context) {
 				delete(h.clients, client.ID)
 				close(client.send)
 				h.mu.Unlock()
-				
+
 				// Update metrics
 				if h.onMetricsUpdate != nil {
 					h.onMetricsUpdate(len(h.clients))
@@ -181,7 +181,7 @@ func (h *Hub) broadcastToAll(message *Message) {
 func (h *Hub) GetClient(clientID string) (*Client, bool) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	
+
 	client, ok := h.clients[clientID]
 	return client, ok
 }
@@ -190,7 +190,7 @@ func (h *Hub) GetClient(clientID string) (*Client, bool) {
 func (h *Hub) GetClients() map[string]*Client {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	
+
 	// Return a copy to avoid race conditions
 	clients := make(map[string]*Client)
 	for k, v := range h.clients {
@@ -202,7 +202,7 @@ func (h *Hub) GetClients() map[string]*Client {
 // SendToClient sends a message to a specific client
 func (h *Hub) SendToClient(clientID string, message *Message) error {
 	message.ClientID = clientID
-	
+
 	select {
 	case h.broadcast <- message:
 		return nil

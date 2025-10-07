@@ -18,7 +18,7 @@ type Config struct {
 	APIKey string
 
 	// Provider configuration
-	ModelProviders []string
+	ModelProviders  []string
 	ProviderConfigs map[string]*models.ProviderConfig
 
 	// OpenAI configuration
@@ -30,33 +30,33 @@ type Config struct {
 	ClaudeBaseURL string
 
 	// Gemini configuration
-	GeminiAPIKey         string
+	GeminiAPIKey           string
 	GeminiOAuthCredsBase64 string
 	GeminiOAuthCredsFile   string
-	ProjectID            string
+	ProjectID              string
 
 	// System prompt configuration
 	SystemPromptFile string
 	SystemPromptMode string
 
 	// Logging configuration
-	LogPrompts         string
-	PromptLogBaseName  string
+	LogPrompts        string
+	PromptLogBaseName string
 
 	// Pool configuration
 	ProviderPoolsFile string
 	RequestMaxRetries int
 	RequestBaseDelay  int
-	
+
 	// Redis configuration
 	RedisAddr     string
 	RedisPassword string
 	RedisDB       int
-	
+
 	// Load balancer configuration
 	LoadBalancerEnabled   bool
 	LoadBalancerAlgorithm string
-	
+
 	// Cluster configuration
 	ClusterEnabled bool
 	NodeID         string

@@ -70,7 +70,7 @@ func (rc *RedisCache) Get(ctx context.Context, key string) (interface{}, error) 
 
 	// Update access count
 	rc.client.HIncrBy(ctx, fullKey+":stats", "hits", 1)
-	
+
 	return result, nil
 }
 
@@ -93,12 +93,12 @@ func (rc *RedisCache) Set(ctx context.Context, key string, value interface{}, ex
 
 	// Store metadata
 	stats := map[string]interface{}{
-		"created":  time.Now().Unix(),
-		"size":     len(data),
-		"hits":     0,
-		"expiry":   time.Now().Add(expiration).Unix(),
+		"created": time.Now().Unix(),
+		"size":    len(data),
+		"hits":    0,
+		"expiry":  time.Now().Add(expiration).Unix(),
 	}
-	
+
 	rc.client.HMSet(ctx, fullKey+":stats", stats)
 	rc.client.Expire(ctx, fullKey+":stats", expiration)
 
@@ -108,12 +108,12 @@ func (rc *RedisCache) Set(ctx context.Context, key string, value interface{}, ex
 // Delete removes a value from Redis
 func (rc *RedisCache) Delete(ctx context.Context, key string) error {
 	fullKey := rc.prefix + key
-	
+
 	// Delete both value and stats
 	pipe := rc.client.Pipeline()
 	pipe.Del(ctx, fullKey)
 	pipe.Del(ctx, fullKey+":stats")
-	
+
 	_, err := pipe.Exec(ctx)
 	return err
 }
@@ -122,14 +122,14 @@ func (rc *RedisCache) Delete(ctx context.Context, key string) error {
 func (rc *RedisCache) Clear(ctx context.Context) error {
 	// Use SCAN to find all keys with our prefix
 	iter := rc.client.Scan(ctx, 0, rc.prefix+"*", 0).Iterator()
-	
+
 	pipe := rc.client.Pipeline()
 	count := 0
-	
+
 	for iter.Next(ctx) {
 		pipe.Del(ctx, iter.Val())
 		count++
-		
+
 		// Execute in batches
 		if count%100 == 0 {
 			if _, err := pipe.Exec(ctx); err != nil {
@@ -138,32 +138,32 @@ func (rc *RedisCache) Clear(ctx context.Context) error {
 			pipe = rc.client.Pipeline()
 		}
 	}
-	
+
 	// Execute remaining deletes
 	if count%100 != 0 {
 		if _, err := pipe.Exec(ctx); err != nil {
 			return fmt.Errorf("failed to clear cache: %w", err)
 		}
 	}
-	
+
 	return iter.Err()
 }
 
 // GetStats retrieves cache statistics from Redis
 func (rc *RedisCache) GetStats(ctx context.Context) (map[string]int64, error) {
 	stats := make(map[string]int64)
-	
+
 	// Count total keys
 	iter := rc.client.Scan(ctx, 0, rc.prefix+"*", 0).Iterator()
 	keyCount := int64(0)
 	totalSize := int64(0)
 	totalHits := int64(0)
-	
+
 	for iter.Next(ctx) {
 		key := iter.Val()
 		if !strings.HasSuffix(key, ":stats") {
 			keyCount++
-			
+
 			// Get stats for this key
 			if statsData, err := rc.client.HGetAll(ctx, key+":stats").Result(); err == nil {
 				if size, ok := statsData["size"]; ok {
@@ -179,11 +179,11 @@ func (rc *RedisCache) GetStats(ctx context.Context) (map[string]int64, error) {
 			}
 		}
 	}
-	
+
 	stats["keys"] = keyCount
 	stats["bytes"] = totalSize
 	stats["hits"] = totalHits
-	
+
 	return stats, iter.Err()
 }
 

@@ -12,10 +12,10 @@ import (
 
 // Manager manages pools of providers
 type Manager struct {
-	mu              sync.RWMutex
-	pools           map[string][]*models.ProviderConfig
-	roundRobinIndex map[string]int
-	maxErrorCount   int
+	mu                  sync.RWMutex
+	pools               map[string][]*models.ProviderConfig
+	roundRobinIndex     map[string]int
+	maxErrorCount       int
 	healthCheckInterval time.Duration
 }
 
@@ -77,7 +77,7 @@ func (m *Manager) LoadConfig(filename string) error {
 	defer m.mu.Unlock()
 
 	m.pools = config
-	
+
 	// Initialize round-robin indices
 	for providerType := range config {
 		m.roundRobinIndex[providerType] = 0
@@ -111,7 +111,7 @@ func (m *Manager) SelectProvider(providerType string) (*models.ProviderConfig, e
 	// Round-robin selection
 	index := m.roundRobinIndex[providerType] % len(healthyProviders)
 	selected := healthyProviders[index]
-	
+
 	// Update round-robin index
 	m.roundRobinIndex[providerType] = (index + 1) % len(healthyProviders)
 
@@ -136,7 +136,7 @@ func (m *Manager) MarkProviderUnhealthy(providerType string, providerUUID string
 		if p.UUID == providerUUID {
 			p.ErrorCount++
 			p.LastErrorTime = timePtr(time.Now())
-			
+
 			if p.ErrorCount >= m.maxErrorCount {
 				p.IsHealthy = false
 			}
