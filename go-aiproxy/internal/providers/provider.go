@@ -11,19 +11,19 @@ import (
 type Provider interface {
 	// GenerateContent sends a completion request and returns the response
 	GenerateContent(ctx context.Context, model string, request interface{}) (interface{}, error)
-	
+
 	// GenerateContentStream sends a streaming completion request
 	GenerateContentStream(ctx context.Context, model string, request interface{}) (io.ReadCloser, error)
-	
+
 	// ListModels returns available models
 	ListModels(ctx context.Context) (interface{}, error)
-	
+
 	// RefreshToken refreshes authentication token if needed
 	RefreshToken(ctx context.Context) error
-	
+
 	// GetProtocolPrefix returns the protocol prefix for this provider
 	GetProtocolPrefix() models.ProtocolPrefix
-	
+
 	// IsHealthy checks if the provider is healthy
 	IsHealthy() bool
 }

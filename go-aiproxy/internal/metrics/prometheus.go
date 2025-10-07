@@ -1,6 +1,9 @@
 package metrics
 
 import (
+	"fmt"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -24,25 +27,25 @@ type Metrics struct {
 	ProviderTokensUsed      *prometheus.CounterVec
 
 	// Cache metrics
-	CacheHits       *prometheus.CounterVec
-	CacheMisses     *prometheus.CounterVec
-	CacheEvictions  prometheus.Counter
-	CacheSizeBytes  prometheus.Gauge
+	CacheHits      *prometheus.CounterVec
+	CacheMisses    *prometheus.CounterVec
+	CacheEvictions prometheus.Counter
+	CacheSizeBytes prometheus.Gauge
 
 	// System metrics
-	GoRoutines      prometheus.Gauge
+	GoRoutines       prometheus.Gauge
 	MemoryUsageBytes prometheus.Gauge
 	CPUUsagePercent  prometheus.Gauge
 
 	// WebSocket metrics
-	WSConnections    prometheus.Gauge
-	WSMessagesTotal  *prometheus.CounterVec
-	WSBytesTotal     *prometheus.CounterVec
+	WSConnections   prometheus.Gauge
+	WSMessagesTotal *prometheus.CounterVec
+	WSBytesTotal    *prometheus.CounterVec
 
 	// Pool metrics
-	PoolProviders      *prometheus.GaugeVec
+	PoolProviders        *prometheus.GaugeVec
 	PoolHealthyProviders *prometheus.GaugeVec
-	PoolFailovers       *prometheus.CounterVec
+	PoolFailovers        *prometheus.CounterVec
 }
 
 // NewMetrics creates and registers all Prometheus metrics
@@ -222,7 +225,7 @@ func PrometheusMiddleware(m *Metrics) gin.HandlerFunc {
 		// Record metrics
 		duration := time.Since(start).Seconds()
 		status := fmt.Sprintf("%d", c.Writer.Status())
-		
+
 		m.RequestsTotal.WithLabelValues(method, path, status).Inc()
 		m.RequestDuration.WithLabelValues(method, path).Observe(duration)
 		m.ResponseSize.WithLabelValues(method, path).Observe(float64(c.Writer.Size()))
@@ -287,7 +290,7 @@ func (m *Metrics) CollectSystemMetrics(interval time.Duration) {
 
 			goroutines := runtime.NumGoroutine()
 			memoryMB := float64(memStats.Alloc) / 1024 / 1024
-			
+
 			// CPU usage would require platform-specific implementation
 			// For now, we'll use a placeholder
 			cpuPercent := 0.0

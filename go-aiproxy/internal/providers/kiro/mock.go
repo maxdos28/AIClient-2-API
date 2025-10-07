@@ -125,16 +125,16 @@ func (c *MockClient) generateMockResponse(req *models.ClaudeRequest) string {
 	switch {
 	case strings.Contains(lowerContent, "你好") || strings.Contains(lowerContent, "hello"):
 		return "你好！我是通过 Kiro API 提供的 Claude 助手。很高兴为您服务！"
-	
+
 	case strings.Contains(lowerContent, "介绍"):
 		return "我是 Claude，一个由 Anthropic 开发的 AI 助手。通过 Kiro API，我可以帮助您处理各种任务。"
-	
+
 	case strings.Contains(lowerContent, "数到"):
 		return "1\n2\n3\n4\n5"
-	
+
 	case strings.Contains(lowerContent, "weather"):
 		return "I'd be happy to help you check the weather, but I would need to use the get_weather tool to provide accurate information. Based on your request for Tokyo, I can see you're interested in weather information for that location."
-	
+
 	default:
 		return fmt.Sprintf("我收到了您的消息：'%s'。这是一个模拟响应，用于测试 Kiro API 集成。", userContent)
 	}

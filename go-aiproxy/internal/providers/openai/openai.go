@@ -95,9 +95,9 @@ func (c *Client) GenerateContentStream(ctx context.Context, model string, reques
 
 	// Return a custom reader that handles SSE parsing
 	return &openAIStreamReader{
-		reader:  bufio.NewReader(resp.Body),
-		closer:  resp.Body,
-		model:   model,
+		reader: bufio.NewReader(resp.Body),
+		closer: resp.Body,
+		model:  model,
 	}, nil
 }
 
@@ -156,10 +156,10 @@ func (c *Client) makeRequest(ctx context.Context, method, url string, body inter
 
 // openAIStreamReader handles SSE stream parsing
 type openAIStreamReader struct {
-	reader  *bufio.Reader
-	closer  io.Closer
-	model   string
-	buffer  []byte
+	reader *bufio.Reader
+	closer io.Closer
+	model  string
+	buffer []byte
 }
 
 func (r *openAIStreamReader) Read(p []byte) (n int, err error) {

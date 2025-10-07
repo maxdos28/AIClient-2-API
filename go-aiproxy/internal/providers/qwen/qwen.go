@@ -51,7 +51,7 @@ func NewClient(config *models.ProviderConfig) (*Client, error) {
 			return nil, fmt.Errorf("failed to create token manager: %w", err)
 		}
 		client.tokenManager = tokenManager
-		
+
 		// Initialize OAuth client
 		if err := client.initialize(context.Background()); err != nil {
 			return nil, fmt.Errorf("failed to initialize Qwen OAuth: %w", err)
@@ -150,16 +150,16 @@ func (c *Client) GenerateContentStream(ctx context.Context, model string, reques
 
 	// Return a custom reader that handles SSE parsing
 	return &qwenStreamReader{
-		reader:  bufio.NewReader(resp.Body),
-		closer:  resp.Body,
-		model:   model,
+		reader: bufio.NewReader(resp.Body),
+		closer: resp.Body,
+		model:  model,
 	}, nil
 }
 
 // ListModels implements the Provider interface
 func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 	// Qwen supported models
-	models := []models.ModelInfo{
+	modelList := []models.ModelInfo{
 		{
 			ID:      "qwen-max",
 			Object:  "model",
@@ -194,7 +194,7 @@ func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 
 	return &models.ModelList{
 		Object: "list",
-		Data:   models,
+		Data:   modelList,
 	}, nil
 }
 
@@ -212,7 +212,7 @@ func (c *Client) RefreshToken(ctx context.Context) error {
 
 	// Update HTTP client with new token
 	c.httpClient = oauth2.NewClient(ctx, oauth2.StaticTokenSource(token))
-	
+
 	return nil
 }
 
@@ -279,7 +279,7 @@ func (c *Client) enhanceWithBuiltinTools(req *models.OpenAIRequest) *models.Open
 		for _, tool := range req.Tools {
 			existingNames[tool.Function.Name] = true
 		}
-		
+
 		// Add only non-existing built-in tools
 		for _, tool := range builtinTools {
 			if !existingNames[tool.Function.Name] {
@@ -320,7 +320,7 @@ func (c *Client) makeRequest(ctx context.Context, method, url string, body inter
 	if resp.StatusCode >= 400 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
-		
+
 		// Handle token expiration
 		if resp.StatusCode == 401 && c.tokenManager != nil {
 			// Try to refresh token
@@ -329,7 +329,7 @@ func (c *Client) makeRequest(ctx context.Context, method, url string, body inter
 				return c.makeRequest(ctx, method, url, body)
 			}
 		}
-		
+
 		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -338,10 +338,10 @@ func (c *Client) makeRequest(ctx context.Context, method, url string, body inter
 
 // qwenStreamReader handles SSE stream parsing for Qwen
 type qwenStreamReader struct {
-	reader  *bufio.Reader
-	closer  io.Closer
-	model   string
-	buffer  []byte
+	reader *bufio.Reader
+	closer io.Closer
+	model  string
+	buffer []byte
 }
 
 func (r *qwenStreamReader) Read(p []byte) (n int, err error) {

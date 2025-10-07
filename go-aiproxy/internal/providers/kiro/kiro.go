@@ -51,7 +51,7 @@ func NewClient(config *models.ProviderConfig) (*Client, error) {
 			return nil, fmt.Errorf("failed to create token manager: %w", err)
 		}
 		client.tokenManager = tokenManager
-		
+
 		// Initialize OAuth client
 		if err := client.initialize(context.Background()); err != nil {
 			return nil, fmt.Errorf("failed to initialize Kiro OAuth: %w", err)
@@ -140,16 +140,16 @@ func (c *Client) GenerateContentStream(ctx context.Context, model string, reques
 
 	// Return a custom reader that handles SSE parsing
 	return &kiroStreamReader{
-		reader:  bufio.NewReader(resp.Body),
-		closer:  resp.Body,
-		model:   model,
+		reader: bufio.NewReader(resp.Body),
+		closer: resp.Body,
+		model:  model,
 	}, nil
 }
 
 // ListModels implements the Provider interface
 func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 	// Kiro supports Claude models
-	models := []models.ModelInfo{
+	modelList := []models.ModelInfo{
 		{
 			ID:      "claude-3-opus-20240229",
 			Object:  "model",
@@ -178,7 +178,7 @@ func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 
 	return &models.ModelList{
 		Object: "list",
-		Data:   models,
+		Data:   modelList,
 	}, nil
 }
 
@@ -196,7 +196,7 @@ func (c *Client) RefreshToken(ctx context.Context) error {
 
 	// Update HTTP client with new token
 	c.httpClient = oauth2.NewClient(ctx, oauth2.StaticTokenSource(token))
-	
+
 	return nil
 }
 
@@ -244,7 +244,7 @@ func (c *Client) makeRequest(ctx context.Context, method, url string, body inter
 	if resp.StatusCode >= 400 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
-		
+
 		// Handle token expiration
 		if resp.StatusCode == 401 && c.tokenManager != nil {
 			// Try to refresh token
@@ -253,7 +253,7 @@ func (c *Client) makeRequest(ctx context.Context, method, url string, body inter
 				return c.makeRequest(ctx, method, url, body)
 			}
 		}
-		
+
 		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -262,10 +262,10 @@ func (c *Client) makeRequest(ctx context.Context, method, url string, body inter
 
 // kiroStreamReader handles SSE stream parsing for Kiro
 type kiroStreamReader struct {
-	reader  *bufio.Reader
-	closer  io.Closer
-	model   string
-	buffer  []byte
+	reader *bufio.Reader
+	closer io.Closer
+	model  string
+	buffer []byte
 }
 
 func (r *kiroStreamReader) Read(p []byte) (n int, err error) {
@@ -293,7 +293,7 @@ func (r *kiroStreamReader) Read(p []byte) (n int, err error) {
 
 		if strings.HasPrefix(line, "data: ") {
 			data := strings.TrimPrefix(line, "data: ")
-			
+
 			// Parse the event
 			var event map[string]interface{}
 			if err := json.Unmarshal([]byte(data), &event); err != nil {

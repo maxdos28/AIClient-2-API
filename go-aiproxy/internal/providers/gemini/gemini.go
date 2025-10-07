@@ -15,7 +15,6 @@ import (
 	"github.com/aiproxy/go-aiproxy/pkg/models"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/option"
 )
 
 // Client implements the Gemini provider
@@ -140,7 +139,7 @@ func (c *Client) GenerateContentStream(ctx context.Context, model string, reques
 // ListModels implements the Provider interface
 func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 	url := fmt.Sprintf("%s/v1beta/models", c.baseURL)
-	
+
 	resp, err := c.makeRequest(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -158,13 +157,13 @@ func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 	}
 
 	// Convert to standard format
-	var models []models.ModelInfo
+	var modelList []models.ModelInfo
 	for _, m := range result.Models {
 		modelID := m.Name
 		if strings.HasPrefix(modelID, "models/") {
 			modelID = strings.TrimPrefix(modelID, "models/")
 		}
-		models = append(models, models.ModelInfo{
+		modelList = append(modelList, models.ModelInfo{
 			ID:      modelID,
 			Object:  "model",
 			Created: time.Now().Unix(),
@@ -174,7 +173,7 @@ func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 
 	return &models.ModelList{
 		Object: "list",
-		Data:   models,
+		Data:   modelList,
 	}, nil
 }
 

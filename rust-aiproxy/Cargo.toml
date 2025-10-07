@@ -1,0 +1,50 @@
+[package]
+name = "aiproxy"
+version = "0.1.0"
+edition = "2021"
+authors = ["AI Proxy Team"]
+description = "A unified AI API proxy supporting multiple providers"
+
+[dependencies]
+# Web framework
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["fs", "trace", "cors"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# HTTP client (using rustls instead of native-tls to avoid OpenSSL dependency)
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilities
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+base64 = "0.21"
+md5 = "0.7"
+
+# Async utilities
+futures = "0.3"
+async-trait = "0.1"
+
+# Configuration
+clap = { version = "4.0", features = ["derive", "env"] }
+dotenv = "0.15"
+
+[dev-dependencies]
+mockito = "1.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

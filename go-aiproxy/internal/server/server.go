@@ -1,12 +1,11 @@
 package server
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/aiproxy/go-aiproxy/internal/config"
@@ -94,7 +93,7 @@ func (s *Server) setupRouter() {
 	gin.SetMode(gin.ReleaseMode)
 
 	s.router = gin.New()
-	
+
 	// Add middleware
 	s.router.Use(gin.Recovery())
 	s.router.Use(middleware.Logger())
@@ -198,7 +197,7 @@ func (s *Server) handleChatCompletions(c *gin.Context) {
 // handleStreamingResponse handles streaming responses
 func (s *Server) handleStreamingResponse(c *gin.Context, provider providers.Provider, model string, request interface{}, fromProtocol, toProtocol models.ProtocolPrefix) {
 	ctx := c.Request.Context()
-	
+
 	// Get stream from provider
 	stream, err := provider.GenerateContentStream(ctx, model, request)
 	if err != nil {
@@ -234,7 +233,7 @@ func (s *Server) handleStreamingResponse(c *gin.Context, provider providers.Prov
 
 			if n > 0 {
 				chunk := string(buffer[:n])
-				
+
 				// Convert chunk if needed
 				if fromProtocol != toProtocol {
 					convertedChunk, err := s.converter.ConvertStreamChunk(chunk, toProtocol, fromProtocol, model)
@@ -251,7 +250,7 @@ func (s *Server) handleStreamingResponse(c *gin.Context, provider providers.Prov
 				}
 			}
 		}
-		
+
 		// Send done signal
 		dataChan <- "data: [DONE]\n\n"
 	}()
@@ -286,7 +285,7 @@ func (s *Server) handleListModels(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	models, err := provider.ListModels(ctx)
+	modelList, err := provider.ListModels(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -295,20 +294,20 @@ func (s *Server) handleListModels(c *gin.Context) {
 	// Convert to OpenAI format if needed
 	fromProtocol := provider.GetProtocolPrefix()
 	if fromProtocol != models.ProtocolOpenAI {
-		models, err = s.converter.ConvertModelList(models, fromProtocol, models.ProtocolOpenAI)
+		modelList, err = s.converter.ConvertModelList(modelList, fromProtocol, models.ProtocolOpenAI)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("model list conversion error: %v", err)})
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, models)
+	c.JSON(http.StatusOK, modelList)
 }
 
 // handleGeminiGenerate handles Gemini-style generation requests
 func (s *Server) handleGeminiGenerate(c *gin.Context) {
 	modelName := c.Param("model")
-	
+
 	// Parse request
 	var req models.GeminiRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -318,7 +317,7 @@ func (s *Server) handleGeminiGenerate(c *gin.Context) {
 
 	// Find Gemini provider
 	var provider providers.Provider
-	for name, p := range s.providers {
+	for _, p := range s.providers {
 		if p.GetProtocolPrefix() == models.ProtocolGemini {
 			provider = p
 			break
@@ -344,7 +343,7 @@ func (s *Server) handleGeminiGenerate(c *gin.Context) {
 // handleGeminiStream handles Gemini-style streaming requests
 func (s *Server) handleGeminiStream(c *gin.Context) {
 	modelName := c.Param("model")
-	
+
 	// Parse request
 	var req models.GeminiRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -354,7 +353,7 @@ func (s *Server) handleGeminiStream(c *gin.Context) {
 
 	// Find Gemini provider
 	var provider providers.Provider
-	for name, p := range s.providers {
+	for _, p := range s.providers {
 		if p.GetProtocolPrefix() == models.ProtocolGemini {
 			provider = p
 			break
@@ -374,7 +373,7 @@ func (s *Server) handleGeminiStream(c *gin.Context) {
 func (s *Server) handleGeminiListModels(c *gin.Context) {
 	// Find Gemini provider
 	var provider providers.Provider
-	for name, p := range s.providers {
+	for _, p := range s.providers {
 		if p.GetProtocolPrefix() == models.ProtocolGemini {
 			provider = p
 			break
@@ -407,7 +406,7 @@ func (s *Server) handleClaudeMessages(c *gin.Context) {
 
 	// Find Claude provider
 	var provider providers.Provider
-	for name, p := range s.providers {
+	for _, p := range s.providers {
 		if p.GetProtocolPrefix() == models.ProtocolClaude {
 			provider = p
 			break

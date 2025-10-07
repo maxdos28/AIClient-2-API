@@ -96,16 +96,16 @@ func (c *Client) GenerateContentStream(ctx context.Context, model string, reques
 
 	// Return a custom reader that handles SSE parsing
 	return &claudeStreamReader{
-		reader:  bufio.NewReader(resp.Body),
-		closer:  resp.Body,
-		model:   model,
+		reader: bufio.NewReader(resp.Body),
+		closer: resp.Body,
+		model:  model,
 	}, nil
 }
 
 // ListModels implements the Provider interface
 func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 	// Claude doesn't have a public models endpoint, so we return a static list
-	models := []models.ModelInfo{
+	modelList := []models.ModelInfo{
 		{
 			ID:      "claude-3-opus-20240229",
 			Object:  "model",
@@ -134,7 +134,7 @@ func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 
 	return &models.ModelList{
 		Object: "list",
-		Data:   models,
+		Data:   modelList,
 	}, nil
 }
 
@@ -177,10 +177,10 @@ func (c *Client) makeRequest(ctx context.Context, method, url string, body inter
 
 // claudeStreamReader handles SSE stream parsing for Claude
 type claudeStreamReader struct {
-	reader  *bufio.Reader
-	closer  io.Closer
-	model   string
-	buffer  []byte
+	reader *bufio.Reader
+	closer io.Closer
+	model  string
+	buffer []byte
 }
 
 func (r *claudeStreamReader) Read(p []byte) (n int, err error) {
@@ -208,7 +208,7 @@ func (r *claudeStreamReader) Read(p []byte) (n int, err error) {
 
 		if strings.HasPrefix(line, "data: ") {
 			data := strings.TrimPrefix(line, "data: ")
-			
+
 			// Parse the event
 			var event map[string]interface{}
 			if err := json.Unmarshal([]byte(data), &event); err != nil {

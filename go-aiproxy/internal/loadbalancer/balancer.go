@@ -24,35 +24,35 @@ const (
 
 // LoadBalancer manages multiple provider instances
 type LoadBalancer struct {
-	mu              sync.RWMutex
-	algorithm       Algorithm
-	instances       []*Instance
-	currentIndex    uint64
-	healthChecker   *HealthChecker
-	metrics         *BalancerMetrics
+	mu            sync.RWMutex
+	algorithm     Algorithm
+	instances     []*Instance
+	currentIndex  uint64
+	healthChecker *HealthChecker
+	metrics       *BalancerMetrics
 }
 
 // Instance represents a provider instance
 type Instance struct {
-	ID              string
-	Provider        providers.Provider
-	Config          *models.ProviderConfig
-	Weight          int
-	ActiveRequests  int64
-	TotalRequests   int64
-	FailedRequests  int64
-	LastUsed        time.Time
-	IsHealthy       bool
-	HealthCheckURL  string
+	ID             string
+	Provider       providers.Provider
+	Config         *models.ProviderConfig
+	Weight         int
+	ActiveRequests int64
+	TotalRequests  int64
+	FailedRequests int64
+	LastUsed       time.Time
+	IsHealthy      bool
+	HealthCheckURL string
 }
 
 // BalancerMetrics tracks load balancer performance
 type BalancerMetrics struct {
-	TotalRequests   int64
-	FailedRequests  int64
-	ActiveRequests  int64
+	TotalRequests    int64
+	FailedRequests   int64
+	ActiveRequests   int64
 	HealthyInstances int64
-	TotalInstances  int64
+	TotalInstances   int64
 }
 
 // NewLoadBalancer creates a new load balancer
@@ -83,12 +83,12 @@ func (lb *LoadBalancer) AddInstance(id string, provider providers.Provider, conf
 	}
 
 	instance := &Instance{
-		ID:       id,
-		Provider: provider,
-		Config:   config,
-		Weight:   weight,
+		ID:        id,
+		Provider:  provider,
+		Config:    config,
+		Weight:    weight,
 		IsHealthy: true,
-		LastUsed: time.Now(),
+		LastUsed:  time.Now(),
 	}
 
 	lb.instances = append(lb.instances, instance)
@@ -190,7 +190,7 @@ func (lb *LoadBalancer) selectRoundRobin(instances []*Instance) *Instance {
 	if len(instances) == 0 {
 		return nil
 	}
-	
+
 	index := atomic.AddUint64(&lb.currentIndex, 1) % uint64(len(instances))
 	return instances[index]
 }

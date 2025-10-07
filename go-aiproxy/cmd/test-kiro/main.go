@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -47,7 +49,7 @@ func main() {
 	fmt.Println("4. 测试流式聊天...")
 	fmt.Print("✓ AI 流式回复: ")
 	testStreamChat(serverURL, apiKey)
-	fmt.Println("\n")
+	fmt.Println()
 
 	// 5. 测试工具调用
 	fmt.Println("5. 测试工具调用...")

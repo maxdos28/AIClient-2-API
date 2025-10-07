@@ -1,0 +1,24 @@
+server:
+  port: 3000
+
+spring:
+  application:
+    name: ai-proxy
+
+logging:
+  level:
+    com.aiproxy: INFO
+    root: INFO
+
+# Provider configurations
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+
+claude:
+  api-key: ${CLAUDE_API_KEY:}
+  base-url: ${CLAUDE_BASE_URL:https://api.anthropic.com}
+
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}

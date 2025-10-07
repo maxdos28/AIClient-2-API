@@ -3,11 +3,14 @@ package server
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/aiproxy/go-aiproxy/internal/cache"
+	"github.com/aiproxy/go-aiproxy/internal/config"
 	"github.com/aiproxy/go-aiproxy/internal/loadbalancer"
 	"github.com/aiproxy/go-aiproxy/internal/metrics"
+	"github.com/aiproxy/go-aiproxy/internal/middleware"
 	"github.com/aiproxy/go-aiproxy/internal/providers/kiro"
 	"github.com/aiproxy/go-aiproxy/internal/providers/qwen"
 	"github.com/aiproxy/go-aiproxy/internal/websocket"
@@ -96,7 +99,7 @@ func (s *EnhancedServer) initializeCache(cfg *config.Config) error {
 // initializeMetrics sets up Prometheus metrics
 func (s *EnhancedServer) initializeMetrics() {
 	s.metrics = metrics.NewMetrics()
-	
+
 	// Start system metrics collector
 	s.metrics.CollectSystemMetrics(10 * time.Second)
 
@@ -130,35 +133,39 @@ func (s *EnhancedServer) initializeLoadBalancer(cfg *config.Config) error {
 	if cfg.LoadBalancerAlgorithm != "" {
 		algorithm = loadbalancer.Algorithm(cfg.LoadBalancerAlgorithm)
 	}
-	
+
 	s.loadBalancer = loadbalancer.NewLoadBalancer(algorithm)
 
-	// Add instances from pool configuration
-	for providerType, configs := range s.poolManager.pools {
-		for i, config := range configs {
-			instanceID := fmt.Sprintf("%s-%d", providerType, i)
-			provider := s.providers[providerType]
-			
-			weight := 1
-			if config.Weight > 0 {
-				weight = config.Weight
-			}
-			
-			s.loadBalancer.AddInstance(instanceID, provider, config, weight)
-		}
-	}
+	// TODO: Add instances from pool configuration
+	// Note: Direct access to s.poolManager.pools is not possible as it's unexported
+	// This functionality would need to be implemented through exported methods
+	/*
+		for providerType, configs := range s.poolManager.pools {
+			for i, config := range configs {
+				instanceID := fmt.Sprintf("%s-%d", providerType, i)
+				provider := s.providers[providerType]
 
-	// Set up health check callback
-	s.loadBalancer.healthChecker.AddUpdateCallback(func(instanceID string, healthy bool) {
-		s.loadBalancer.UpdateInstanceHealth(instanceID, healthy)
-		
-		// Update metrics
-		if healthy {
-			s.metrics.PoolHealthyProviders.WithLabelValues(instanceID).Inc()
-		} else {
-			s.metrics.PoolHealthyProviders.WithLabelValues(instanceID).Dec()
+				weight := 1
+				if config.Weight > 0 {
+					weight = config.Weight
+				}
+
+				s.loadBalancer.AddInstance(instanceID, provider, config, weight)
+			}
 		}
-	})
+
+		// Set up health check callback
+		s.loadBalancer.healthChecker.AddUpdateCallback(func(instanceID string, healthy bool) {
+			s.loadBalancer.UpdateInstanceHealth(instanceID, healthy)
+
+			// Update metrics
+			if healthy {
+				s.metrics.PoolHealthyProviders.WithLabelValues(instanceID).Inc()
+			} else {
+				s.metrics.PoolHealthyProviders.WithLabelValues(instanceID).Dec()
+			}
+		})
+	*/
 
 	// Initialize cluster if configured
 	if cfg.ClusterEnabled {
@@ -198,7 +205,7 @@ func (s *EnhancedServer) addEnhancedProviders() error {
 func (s *EnhancedServer) setupEnhancedRoutes() {
 	// Metrics endpoint
 	s.router.GET("/metrics", metrics.Handler())
-	
+
 	// Metrics dashboard
 	if s.dashboard != nil {
 		s.dashboard.RegisterRoutes(s.router.Group("/"))
@@ -243,16 +250,16 @@ func (s *EnhancedServer) handleChatCompletionsWithCache(c *gin.Context) {
 			if providerName == "" {
 				providerName = s.config.ModelProviders[0]
 			}
-			
+
 			cacheKey, _ := s.cacheManager.GenerateCacheKey(providerName, req.Model, &req)
-			
+
 			// Check cache
 			if cached, found := s.cacheManager.Get(cacheKey); found {
 				s.metrics.RecordCacheMetrics("memory", true)
 				c.JSON(http.StatusOK, cached)
 				return
 			}
-			
+
 			// Cache miss - continue with normal processing
 			s.metrics.RecordCacheMetrics("memory", false)
 		}
@@ -265,7 +272,7 @@ func (s *EnhancedServer) handleChatCompletionsWithCache(c *gin.Context) {
 // Cache management handlers
 func (s *EnhancedServer) handleCacheStats(c *gin.Context) {
 	stats := s.cacheManager.GetStats()
-	
+
 	response := gin.H{
 		"enabled":     s.cacheManager.IsEnabled(),
 		"hits":        stats.Hits,
@@ -286,7 +293,7 @@ func (s *EnhancedServer) handleCacheStats(c *gin.Context) {
 
 func (s *EnhancedServer) handleCacheClear(c *gin.Context) {
 	s.cacheManager.Clear()
-	
+
 	if s.redisCache != nil {
 		s.redisCache.Clear(c.Request.Context())
 	}
@@ -307,7 +314,7 @@ func (s *EnhancedServer) handleCacheDisable(c *gin.Context) {
 // Load balancer handlers
 func (s *EnhancedServer) handleLBInstances(c *gin.Context) {
 	instances := s.loadBalancer.GetInstances()
-	
+
 	response := make([]gin.H, len(instances))
 	for i, inst := range instances {
 		response[i] = gin.H{
@@ -326,7 +333,7 @@ func (s *EnhancedServer) handleLBInstances(c *gin.Context) {
 
 func (s *EnhancedServer) handleLBMetrics(c *gin.Context) {
 	metrics := s.loadBalancer.GetMetrics()
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"total_requests":    metrics.TotalRequests,
 		"failed_requests":   metrics.FailedRequests,
@@ -340,7 +347,7 @@ func (s *EnhancedServer) handleLBSetAlgorithm(c *gin.Context) {
 	var req struct {
 		Algorithm string `json:"algorithm"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
