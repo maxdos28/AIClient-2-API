@@ -1,0 +1,27 @@
+# sbt
+target/
+project/target/
+project/project/
+
+# IDE
+.idea/
+.bsp/
+.metals/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Scala
+*.class
+*.log
+.cache-main
+.cache-tests
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
