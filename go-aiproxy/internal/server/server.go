@@ -1,12 +1,11 @@
 package server
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/aiproxy/go-aiproxy/internal/config"
@@ -286,7 +285,7 @@ func (s *Server) handleListModels(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	models, err := provider.ListModels(ctx)
+	modelList, err := provider.ListModels(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -295,14 +294,14 @@ func (s *Server) handleListModels(c *gin.Context) {
 	// Convert to OpenAI format if needed
 	fromProtocol := provider.GetProtocolPrefix()
 	if fromProtocol != models.ProtocolOpenAI {
-		models, err = s.converter.ConvertModelList(models, fromProtocol, models.ProtocolOpenAI)
+		modelList, err = s.converter.ConvertModelList(modelList, fromProtocol, models.ProtocolOpenAI)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("model list conversion error: %v", err)})
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, models)
+	c.JSON(http.StatusOK, modelList)
 }
 
 // handleGeminiGenerate handles Gemini-style generation requests
@@ -318,7 +317,7 @@ func (s *Server) handleGeminiGenerate(c *gin.Context) {
 
 	// Find Gemini provider
 	var provider providers.Provider
-	for name, p := range s.providers {
+	for _, p := range s.providers {
 		if p.GetProtocolPrefix() == models.ProtocolGemini {
 			provider = p
 			break
@@ -354,7 +353,7 @@ func (s *Server) handleGeminiStream(c *gin.Context) {
 
 	// Find Gemini provider
 	var provider providers.Provider
-	for name, p := range s.providers {
+	for _, p := range s.providers {
 		if p.GetProtocolPrefix() == models.ProtocolGemini {
 			provider = p
 			break
@@ -374,7 +373,7 @@ func (s *Server) handleGeminiStream(c *gin.Context) {
 func (s *Server) handleGeminiListModels(c *gin.Context) {
 	// Find Gemini provider
 	var provider providers.Provider
-	for name, p := range s.providers {
+	for _, p := range s.providers {
 		if p.GetProtocolPrefix() == models.ProtocolGemini {
 			provider = p
 			break
@@ -407,7 +406,7 @@ func (s *Server) handleClaudeMessages(c *gin.Context) {
 
 	// Find Claude provider
 	var provider providers.Provider
-	for name, p := range s.providers {
+	for _, p := range s.providers {
 		if p.GetProtocolPrefix() == models.ProtocolClaude {
 			provider = p
 			break

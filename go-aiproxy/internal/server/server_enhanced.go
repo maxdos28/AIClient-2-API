@@ -3,11 +3,14 @@ package server
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/aiproxy/go-aiproxy/internal/cache"
+	"github.com/aiproxy/go-aiproxy/internal/config"
 	"github.com/aiproxy/go-aiproxy/internal/loadbalancer"
 	"github.com/aiproxy/go-aiproxy/internal/metrics"
+	"github.com/aiproxy/go-aiproxy/internal/middleware"
 	"github.com/aiproxy/go-aiproxy/internal/providers/kiro"
 	"github.com/aiproxy/go-aiproxy/internal/providers/qwen"
 	"github.com/aiproxy/go-aiproxy/internal/websocket"
@@ -133,7 +136,10 @@ func (s *EnhancedServer) initializeLoadBalancer(cfg *config.Config) error {
 	
 	s.loadBalancer = loadbalancer.NewLoadBalancer(algorithm)
 
-	// Add instances from pool configuration
+	// TODO: Add instances from pool configuration
+	// Note: Direct access to s.poolManager.pools is not possible as it's unexported
+	// This functionality would need to be implemented through exported methods
+	/*
 	for providerType, configs := range s.poolManager.pools {
 		for i, config := range configs {
 			instanceID := fmt.Sprintf("%s-%d", providerType, i)
@@ -159,6 +165,7 @@ func (s *EnhancedServer) initializeLoadBalancer(cfg *config.Config) error {
 			s.metrics.PoolHealthyProviders.WithLabelValues(instanceID).Dec()
 		}
 	})
+	*/
 
 	// Initialize cluster if configured
 	if cfg.ClusterEnabled {

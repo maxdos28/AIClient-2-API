@@ -105,7 +105,7 @@ func (c *Client) GenerateContentStream(ctx context.Context, model string, reques
 // ListModels implements the Provider interface
 func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 	// Claude doesn't have a public models endpoint, so we return a static list
-	models := []models.ModelInfo{
+	modelList := []models.ModelInfo{
 		{
 			ID:      "claude-3-opus-20240229",
 			Object:  "model",
@@ -134,7 +134,7 @@ func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 
 	return &models.ModelList{
 		Object: "list",
-		Data:   models,
+		Data:   modelList,
 	}, nil
 }
 

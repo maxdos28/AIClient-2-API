@@ -149,7 +149,7 @@ func (c *Client) GenerateContentStream(ctx context.Context, model string, reques
 // ListModels implements the Provider interface
 func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 	// Kiro supports Claude models
-	models := []models.ModelInfo{
+	modelList := []models.ModelInfo{
 		{
 			ID:      "claude-3-opus-20240229",
 			Object:  "model",
@@ -178,7 +178,7 @@ func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 
 	return &models.ModelList{
 		Object: "list",
-		Data:   models,
+		Data:   modelList,
 	}, nil
 }
 

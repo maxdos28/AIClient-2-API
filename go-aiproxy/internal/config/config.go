@@ -47,6 +47,21 @@ type Config struct {
 	ProviderPoolsFile string
 	RequestMaxRetries int
 	RequestBaseDelay  int
+	
+	// Redis configuration
+	RedisAddr     string
+	RedisPassword string
+	RedisDB       int
+	
+	// Load balancer configuration
+	LoadBalancerEnabled   bool
+	LoadBalancerAlgorithm string
+	
+	// Cluster configuration
+	ClusterEnabled bool
+	NodeID         string
+	NodeAddress    string
+	SeedNodes      []string
 }
 
 // New creates a new configuration instance

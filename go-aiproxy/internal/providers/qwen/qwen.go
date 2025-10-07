@@ -159,7 +159,7 @@ func (c *Client) GenerateContentStream(ctx context.Context, model string, reques
 // ListModels implements the Provider interface
 func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 	// Qwen supported models
-	models := []models.ModelInfo{
+	modelList := []models.ModelInfo{
 		{
 			ID:      "qwen-max",
 			Object:  "model",
@@ -194,7 +194,7 @@ func (c *Client) ListModels(ctx context.Context) (interface{}, error) {
 
 	return &models.ModelList{
 		Object: "list",
-		Data:   models,
+		Data:   modelList,
 	}, nil
 }
 

@@ -1,6 +1,10 @@
 package config
 
-import "github.com/aiproxy/go-aiproxy/pkg/models"
+import (
+	"os"
+	
+	"github.com/aiproxy/go-aiproxy/pkg/models"
+)
 
 // Enhanced configuration fields
 type EnhancedConfig struct {
