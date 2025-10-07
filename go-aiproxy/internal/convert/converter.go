@@ -835,8 +835,101 @@ func (c *DefaultConverter) marshalJSON(v interface{}) string {
 
 // Stub implementations for remaining conversions
 func (c *DefaultConverter) toClaudeRequestFromGemini(data interface{}) (*models.ClaudeRequest, error) {
-	// Implementation would follow similar pattern
-	return &models.ClaudeRequest{}, nil
+	geminiReq, ok := data.(*models.GeminiRequest)
+	if !ok {
+		return nil, fmt.Errorf("invalid Gemini request type")
+	}
+
+	claudeReq := &models.ClaudeRequest{
+		Messages: []models.ClaudeMessage{},
+	}
+
+	// Convert system instruction
+	if geminiReq.SystemInstruction != nil && len(geminiReq.SystemInstruction.Parts) > 0 {
+		var systemTexts []string
+		for _, part := range geminiReq.SystemInstruction.Parts {
+			if part.Text != "" {
+				systemTexts = append(systemTexts, part.Text)
+			}
+		}
+		claudeReq.System = strings.Join(systemTexts, "\n")
+	}
+
+	// Convert messages
+	for _, content := range geminiReq.Contents {
+		role := content.Role
+		if role == "model" {
+			role = "assistant"
+		}
+
+		claudeContents := []models.ClaudeContent{}
+		for _, part := range content.Parts {
+			if part.Text != "" {
+				claudeContents = append(claudeContents, models.ClaudeContent{
+					Type: "text",
+					Text: part.Text,
+				})
+			}
+			if part.InlineData != nil {
+				claudeContents = append(claudeContents, models.ClaudeContent{
+					Type: "image",
+					Source: &models.ClaudeImageSource{
+						Type:      "base64",
+						MediaType: part.InlineData.MimeType,
+						Data:      part.InlineData.Data,
+					},
+				})
+			}
+			if part.FunctionCall != nil {
+				claudeContents = append(claudeContents, models.ClaudeContent{
+					Type:  "tool_use",
+					Name:  part.FunctionCall.Name,
+					Input: part.FunctionCall.Args,
+				})
+			}
+			if part.FunctionResponse != nil {
+				claudeContents = append(claudeContents, models.ClaudeContent{
+					Type:    "tool_result",
+					Name:    part.FunctionResponse.Name,
+					Content: part.FunctionResponse.Response,
+				})
+			}
+		}
+
+		if len(claudeContents) > 0 {
+			claudeReq.Messages = append(claudeReq.Messages, models.ClaudeMessage{
+				Role:    role,
+				Content: claudeContents,
+			})
+		}
+	}
+
+	// Convert generation config
+	if geminiReq.GenerationConfig != nil {
+		claudeReq.Temperature = geminiReq.GenerationConfig.Temperature
+		claudeReq.TopP = geminiReq.GenerationConfig.TopP
+		claudeReq.MaxTokens = geminiReq.GenerationConfig.MaxOutputTokens
+	}
+
+	// Set default max tokens if not specified
+	if claudeReq.MaxTokens == 0 {
+		claudeReq.MaxTokens = DefaultMaxTokens
+	}
+
+	// Convert tools
+	if len(geminiReq.Tools) > 0 {
+		for _, tool := range geminiReq.Tools {
+			for _, funcDecl := range tool.FunctionDeclarations {
+				claudeReq.Tools = append(claudeReq.Tools, models.ClaudeTool{
+					Name:        funcDecl.Name,
+					Description: funcDecl.Description,
+					InputSchema: funcDecl.Parameters,
+				})
+			}
+		}
+	}
+
+	return claudeReq, nil
 }
 
 func (c *DefaultConverter) toGeminiRequestFromClaude(data interface{}) (*models.GeminiRequest, error) {
@@ -938,21 +1031,270 @@ func (c *DefaultConverter) toGeminiRequestFromClaude(data interface{}) (*models.
 }
 
 func (c *DefaultConverter) toClaudeChatCompletionFromOpenAI(data interface{}, model string) (*models.ClaudeResponse, error) {
-	// Implementation would follow similar pattern
-	return &models.ClaudeResponse{}, nil
+	openaiResp, ok := data.(*models.OpenAIResponse)
+	if !ok {
+		return nil, fmt.Errorf("invalid OpenAI response type")
+	}
+
+	if len(openaiResp.Choices) == 0 {
+		return nil, fmt.Errorf("no choices in OpenAI response")
+	}
+
+	choice := openaiResp.Choices[0]
+	
+	claudeResp := &models.ClaudeResponse{
+		ID:    openaiResp.ID,
+		Type:  "message",
+		Role:  "assistant",
+		Model: model,
+	}
+
+	// Convert message content
+	if choice.Message != nil {
+		msg := choice.Message
+		
+		// Convert text content
+		if content := msg.GetContentAsString(); content != "" {
+			claudeResp.Content = append(claudeResp.Content, models.ClaudeContent{
+				Type: "text",
+				Text: content,
+			})
+		}
+
+		// Convert tool calls
+		if len(msg.ToolCalls) > 0 {
+			for _, toolCall := range msg.ToolCalls {
+				var args map[string]interface{}
+				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err == nil {
+					claudeResp.Content = append(claudeResp.Content, models.ClaudeContent{
+						Type:  "tool_use",
+						ID:    toolCall.ID,
+						Name:  toolCall.Function.Name,
+						Input: args,
+					})
+				}
+			}
+		}
+	}
+
+	// Convert stop reason
+	switch choice.FinishReason {
+	case "stop":
+		claudeResp.StopReason = "end_turn"
+	case "length":
+		claudeResp.StopReason = "max_tokens"
+	case "tool_calls", "function_call":
+		claudeResp.StopReason = "tool_use"
+	default:
+		claudeResp.StopReason = "end_turn"
+	}
+
+	// Convert usage
+	if openaiResp.Usage != nil {
+		claudeResp.Usage = &models.ClaudeUsage{
+			InputTokens:  openaiResp.Usage.PromptTokens,
+			OutputTokens: openaiResp.Usage.CompletionTokens,
+		}
+	}
+
+	return claudeResp, nil
 }
 
 func (c *DefaultConverter) toClaudeChatCompletionFromGemini(data interface{}, model string) (*models.ClaudeResponse, error) {
-	// Implementation would follow similar pattern
-	return &models.ClaudeResponse{}, nil
+	geminiResp, ok := data.(*models.GeminiResponse)
+	if !ok {
+		return nil, fmt.Errorf("invalid Gemini response type")
+	}
+
+	if len(geminiResp.Candidates) == 0 {
+		return nil, fmt.Errorf("no candidates in Gemini response")
+	}
+
+	candidate := geminiResp.Candidates[0]
+
+	claudeResp := &models.ClaudeResponse{
+		ID:    uuid.New().String(),
+		Type:  "message",
+		Role:  "assistant",
+		Model: model,
+	}
+
+	// Convert content parts
+	for _, part := range candidate.Content.Parts {
+		if part.Text != "" {
+			claudeResp.Content = append(claudeResp.Content, models.ClaudeContent{
+				Type: "text",
+				Text: part.Text,
+			})
+		}
+		if part.FunctionCall != nil {
+			claudeResp.Content = append(claudeResp.Content, models.ClaudeContent{
+				Type:  "tool_use",
+				ID:    uuid.New().String(),
+				Name:  part.FunctionCall.Name,
+				Input: part.FunctionCall.Args,
+			})
+		}
+	}
+
+	// Convert finish reason
+	switch candidate.FinishReason {
+	case "STOP":
+		claudeResp.StopReason = "end_turn"
+	case "MAX_TOKENS":
+		claudeResp.StopReason = "max_tokens"
+	case "SAFETY", "RECITATION":
+		claudeResp.StopReason = "stop_sequence"
+	default:
+		claudeResp.StopReason = "end_turn"
+	}
+
+	// Convert usage
+	if geminiResp.UsageMetadata != nil {
+		claudeResp.Usage = &models.ClaudeUsage{
+			InputTokens:  geminiResp.UsageMetadata.PromptTokenCount,
+			OutputTokens: geminiResp.UsageMetadata.CandidatesTokenCount,
+		}
+	}
+
+	return claudeResp, nil
 }
 
 func (c *DefaultConverter) toClaudeStreamChunkFromOpenAI(data interface{}, model string) (interface{}, error) {
-	// Implementation would follow similar pattern
+	// Parse the stream chunk
+	chunkStr, ok := data.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid stream chunk type")
+	}
+
+	// Remove "data: " prefix if present
+	chunkStr = strings.TrimPrefix(chunkStr, "data: ")
+	chunkStr = strings.TrimSpace(chunkStr)
+
+	// Handle special markers
+	if chunkStr == "[DONE]" || chunkStr == "" {
+		return nil, nil
+	}
+
+	// Parse OpenAI stream chunk
+	var streamChunk models.StreamChunk
+	if err := json.Unmarshal([]byte(chunkStr), &streamChunk); err != nil {
+		return nil, err
+	}
+
+	// Convert to Claude stream event
+	if len(streamChunk.Choices) > 0 && streamChunk.Choices[0].Delta != nil {
+		delta := streamChunk.Choices[0].Delta
+		
+		// Content delta event
+		if content := delta.GetContentAsString(); content != "" {
+			return map[string]interface{}{
+				"type":  "content_block_delta",
+				"index": 0,
+				"delta": map[string]interface{}{
+					"type": "text_delta",
+					"text": content,
+				},
+			}, nil
+		}
+
+		// Tool use delta
+		if len(delta.ToolCalls) > 0 {
+			toolCall := delta.ToolCalls[0]
+			return map[string]interface{}{
+				"type":  "content_block_delta",
+				"index": 0,
+				"delta": map[string]interface{}{
+					"type":              "input_json_delta",
+					"partial_json":      toolCall.Function.Arguments,
+				},
+			}, nil
+		}
+	}
+
+	// Message stop event
+	if len(streamChunk.Choices) > 0 && streamChunk.Choices[0].FinishReason != "" {
+		stopReason := "end_turn"
+		switch streamChunk.Choices[0].FinishReason {
+		case "length":
+			stopReason = "max_tokens"
+		case "tool_calls":
+			stopReason = "tool_use"
+		}
+		
+		return map[string]interface{}{
+			"type":        "message_stop",
+			"stop_reason": stopReason,
+		}, nil
+	}
+
 	return nil, nil
 }
 
 func (c *DefaultConverter) toClaudeStreamChunkFromGemini(data interface{}, model string) (interface{}, error) {
-	// Implementation would follow similar pattern
+	// Parse Gemini stream chunk
+	chunkStr, ok := data.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid stream chunk type")
+	}
+
+	chunkStr = strings.TrimSpace(chunkStr)
+	if chunkStr == "" || chunkStr == "[DONE]" {
+		return nil, nil
+	}
+
+	// Parse Gemini response
+	var geminiResp models.GeminiResponse
+	if err := json.Unmarshal([]byte(chunkStr), &geminiResp); err != nil {
+		return nil, err
+	}
+
+	// Convert to Claude stream events
+	if len(geminiResp.Candidates) > 0 {
+		candidate := geminiResp.Candidates[0]
+		
+		// Process content parts
+		for _, part := range candidate.Content.Parts {
+			if part.Text != "" {
+				return map[string]interface{}{
+					"type":  "content_block_delta",
+					"index": 0,
+					"delta": map[string]interface{}{
+						"type": "text_delta",
+						"text": part.Text,
+					},
+				}, nil
+			}
+
+			if part.FunctionCall != nil {
+				argsJSON, _ := json.Marshal(part.FunctionCall.Args)
+				return map[string]interface{}{
+					"type":  "content_block_delta",
+					"index": 0,
+					"delta": map[string]interface{}{
+						"type":         "input_json_delta",
+						"partial_json": string(argsJSON),
+					},
+				}, nil
+			}
+		}
+
+		// Handle finish reason
+		if candidate.FinishReason != "" {
+			stopReason := "end_turn"
+			switch candidate.FinishReason {
+			case "MAX_TOKENS":
+				stopReason = "max_tokens"
+			case "SAFETY", "RECITATION":
+				stopReason = "stop_sequence"
+			}
+
+			return map[string]interface{}{
+				"type":        "message_stop",
+				"stop_reason": stopReason,
+			}, nil
+		}
+	}
+
 	return nil, nil
 }
